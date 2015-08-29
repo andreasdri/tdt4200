@@ -34,22 +34,44 @@ start is 2 or greater, and end is greater than start.\n");
 		exit(1);
 	}
 
-	// TODO: Compute the local range, so that all the elements are accounted for.
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+	// Compute the local range, so that all the elements are accounted for.
+    int quotient = (stop - start) / size;
+    int rest = (stop - start) % size;
+    int begin = (rank * quotient) + start;
+    int end = (rank * quotient) + quotient + start;
+
+    // The last process must do some more work
+    if (rank + 1 == size) {
+        end += rest;
+    }
 
 	// Perform the computation
 	double sum = 0.0;
-	for (int i = start; i < stop ; i++) {
+	for (int i = begin; i < end ; i++) {
 		sum += 1.0/log(i);
 	}
 
-	// Debug prints if needed
+	// Get the sum of each node's partial answer
+    if (rank != 0) {
+        MPI_Send(&sum, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    }
 
-	// TODO: Get the sum of each node's partial answer
-	// Use MPI_Send and MPI_Recv here
+    else {
+        double recv;
+        for (int i = 1; i < size; i++) {
+            MPI_Recv(&recv, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            sum += recv;
+        }
+        // Print the global sum once only
+        printf("The sum is: %f\n", sum);
 
-	// TODO: Print the global sum once only
-	printf("The sum is: %f\n", sum);
+    }
+
+    MPI_Finalize();
 
 	return 0;
 }
