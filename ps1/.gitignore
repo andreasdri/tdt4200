@@ -1,3 +1,5 @@
 parallel
 serial
 *.dSYM/
+.pdf
+

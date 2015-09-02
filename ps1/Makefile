@@ -16,3 +16,8 @@ all: computeMPI.c
 
 clean:
 	rm -f serial parallel
+
+pdf: andredri_ps1.md
+	pandoc andredri_ps1.md --latex-engine=xelatex -o andredri_ps1.pdf
+	open andredri_ps1.pdf
+
