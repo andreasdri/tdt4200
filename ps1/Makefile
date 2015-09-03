@@ -11,8 +11,7 @@ run_serial: serial
 	./serial $(START) $(STOP)
 
 all: computeMPI.c
-	mpicc -Wall -std=c99 -o parallel computeMPI.c
-	mpirun -np $(PROCESSES) ./parallel $(START) $(STOP)
+	mpicc -Wall -std=c99 -o parallel computeMPI.c -lm -O2
 
 clean:
 	rm -f serial parallel
@@ -20,4 +19,7 @@ clean:
 pdf: andredri_ps1.md
 	pandoc andredri_ps1.md --latex-engine=xelatex -o andredri_ps1.pdf
 	open andredri_ps1.pdf
+
+run: parallel
+	mpirun -np $(PROCESSES) ./parallel $(START) $(STOP)
 
