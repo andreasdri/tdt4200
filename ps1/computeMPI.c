@@ -69,7 +69,7 @@ start is 2 or greater, and end is greater than start.\n");
             sum += recv;
         }
         // Print the global sum once only
-        printf("The sum is: %f\n", sum);
+        printf("%f\n", sum);
 
     }
 
