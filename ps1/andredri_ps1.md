@@ -22,7 +22,7 @@ instructions and data running in parallel.
 b) MPI does not fit well with Shared Memory systems because it doesn't make sense to use a 
 message-passing form of communcation.
 This is because with shared memory, we have to use locks or transactions to prevent unwanted
-side effects when all processes can access the same data. 
+side effects when all processes can access the same data in the same memory.
 
 c) MPI fits well with Distributed Memory systems, because you can code as if the memory is 
 independent. Each process has its own address space and you must only take care of 
@@ -32,6 +32,8 @@ sending and collecting the right data.
 
 a) The for loop receiving the data excepts to have everything in rank order, i.e: (1, 2, 3, ...)
 . We must perhaps wait for some other process to finish before we can continue to receive.
+For small ranges and many processes, the cost of setup, sending and receiving messages is larger
+than the benefit of parallelization.
 
 b)
 Rank 0 (our master process) has to receive and sum all the sub computations. The book outlines 
@@ -46,13 +48,11 @@ could potentially be a bottleneck.
 
 c) 
 
-i) `O(n) = ..., n = stop - start`
+i) `O(n) = n, n = stop - start`. `Pi = n/P, i = 1..10`
 
-`Pi = ..., i = 1..10` 
+ii) `O(P) = P * 6 = P , P = NumberOfProcesses`
 
-ii) `O(P) = ..., P = NumberOfProcesses`
-
-iii) `O(P) = ..., P = NumberOfProcesses`
+iii) `O(P) =  , P = NumberOfProcesses`
 
 iv) `O(P) = ..., P = NumberOfProcesses`
 
