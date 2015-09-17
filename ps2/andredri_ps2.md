@@ -52,11 +52,13 @@ b)
 c)
 
 d)
-A *Warp* is a group of 32 threads that are passed for execution to a Streaming Multiprocessor(SM). Inctructions to the cores are defined per warp. The Fermi arcitecture by Nvidia can have 48 threads in a warp.
+A *Warp* is a group of 32 consecutive threads that are passed for execution to a Streaming Multiprocessor(SM). Instructions to the cores are defined per warp. The Fermi arcitecture by Nvidia can have 48 threads in a warp.
 *Occupancy* is a measure defining $\dfrac{Active warps}{Maximum Active warps}$. It's possible to limit the occupancy by register usage, shared memory usage and block size.
-*Memory Coalescing*
+*Memory Coalescing* is the procedure of making a larger memory block from two smaler ones. The smaler ones must be adjacent and free. This recudes memory fragmentation.
 *Local Memory* is a partion of main memory allocated to a program.
 *Shared Memory* is memory that are shared for all CPU's. When all the CPU's have access the same memory there is often need for concurency controll. In parallel computing we have differ between shared memory and distributed memory.
+
+*TODO:* How to utilize them for maximum effect
 
 ## Part 2, Code
 
