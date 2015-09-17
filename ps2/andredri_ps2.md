@@ -40,11 +40,20 @@ Give the reasoning(s) behind your answers.
 
 a) Explain the terms Threads, Grids, Blocks, and how they relate to one another (if at all)
 Threads, grids and blocks are a software abstraction used to divide work when programming
-in the CUDA environment. Threads are the main abstraction, and are divided into blocks, and
-and blocks into grids. Both blocks and grids can be multiple dimensions. This level of abstraction with grids and blocks makes better GPU's able to execute the program faster by simply running more blocks concurrently.
+in the CUDA environment. Threads are the main abstraction, and are divided into blocks,
+and blocks into grids. Both blocks and grids can be multiple dimensions. This level of
+abstraction with grids and blocks makes better GPU's able to execute the program faster by
+simply running more blocks concurrently.
 
-*Thread* is a sequence of instructions that a processor can run. Threads are part of a program and they can somewhat run independent, though synchronisation often is needed. This gives the a program with different threads to have some threads running while others are blocked while waiting for i/o. In CUDA programming there are usually way more threads than in regular CPU programming.
-*Blocks* are "Blocks" or a group of threads. The threads in a block can communicate with each other.
+*Thread* is a sequence of instructions that a processor can run. Threads are part of a program
+and they can somewhat run independent, though synchronisation often is needed. This gives
+the a program with different threads to have some threads running while others are blocked while
+waiting for I/O. In CUDA programming there are usually way more threads than in regular CPU
+programming.
+
+*Blocks* are "Blocks" or a group of threads. The threads in a block can communicate with each
+other.
+
 *Grids* are collection of blocks which are passed to the kernel for execution.
 
 b)
@@ -52,11 +61,21 @@ b)
 c)
 
 d)
-A *Warp* is a group of 32 consecutive threads that are passed for execution to a Streaming Multiprocessor(SM). Instructions to the cores are defined per warp. The Fermi arcitecture by Nvidia can have 48 threads in a warp.
-*Occupancy* is a measure defining $\dfrac{Active warps}{Maximum Active warps}$. It's possible to limit the occupancy by register usage, shared memory usage and block size.
-*Memory Coalescing* is the procedure of making a larger memory block from two smaler ones. The smaler ones must be adjacent and free. This recudes memory fragmentation.
-*Local Memory* is a partion of main memory allocated to a program.
-*Shared Memory* is memory that are shared for all CPU's. When all the CPU's have access the same memory there is often need for concurency controll. In parallel computing we have differ between shared memory and distributed memory.
+A *Warp* is a group of 32 consecutive threads that are passed for execution to a Streaming
+Multiprocessor(SM). Instructions to the cores are defined per warp. The Fermi arcitecture by
+Nvidia can have 48 threads in a warp.
+
+*Occupancy* is a measure defining $\dfrac{Active warps}{Maximum Active warps}$. It's possible to
+limit the occupancy by register usage, shared memory usage and block size.
+
+*Memory Coalescing* is the procedure of making a larger memory block from two smaller ones. The
+smaller ones must be adjacent and free. This reduces memory fragmentation.
+
+*Local Memory* is a portion of main memory allocated to a program.
+
+*Shared Memory* is memory that are shared for all CPU's. When all the CPU's have access to the
+same memory there is often need for concurrency control. In parallel computing we have a
+difference between shared memory and distributed memory.
 
 *TODO:* How to utilize them for maximum effect
 
