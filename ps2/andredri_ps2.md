@@ -85,9 +85,20 @@ difference between shared memory and distributed memory.
 
 c)
 Transfer to device: 0.180544 ms
+
 Transfer from device: 0.154688 ms
+
 Total execution time (with I/O): 0.199 s
+
 Total execution time (without I/O): 0.693408 ms
 
 Transfer/Execution time without I/O = `100 * (0.180544 + 0.154688) ms / 0.693408 ms = 48.35 %`
+
+Please note that the transfer time does not include allocation and deallocation of
+memory on the device.
+
+As one can see, transfer to and from the device takes up a lot of time. Maybe it could be
+possible to compute while transferring data? The data could be a stream, and the GPU could
+start with the calculations right away. Another idea is to somehow compress the PNG image
+even more.
 
