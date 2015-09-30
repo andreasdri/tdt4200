@@ -47,21 +47,23 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn, in
 			double sumRed = 0, sumGreen = 0, sumBlue = 0;
 			int countIncluded = 0;
 			for(int x = -size; x <= size; x++) {
-			
+				//se if in x bounds
+				int currentX = senterX + x;
+					if(currentX < 0)
+						continue;
+					if(currentX >= imageIn->x)
+						break;
+						
 				for(int y = -size; y <= size; y++) {
-					int currentX = senterX + x;
+					
 					int currentY = senterY + y;
 					
 					// Check if we are outside the bounds
-					if(currentX < 0 || currentX >= imageIn->x)
+					// (moved one to outer loop, only checks y bounds inside)
+					if(currentY < 0)
 						continue;
-					//if(currentX >= imageIn->x)
-					//	continue;
-					
-					if(currentY < 0 || currentY >= imageIn->y)
-						continue;
-					//if(currentY >= imageIn->y)
-					//	continue;
+					if(currentY >= imageIn->y)
+						break;
 					
 					// Now we can begin
 					int numberOfValuesInEachRow = imageIn->x; 
