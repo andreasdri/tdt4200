@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "ppm.h"
 
@@ -43,7 +44,7 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn, in
 		for(int senterY = 0; senterY < imageIn->y; senterY++) {
 			
 			// For each pixel we compute the magic number
-			double sum = 0;
+			double sumRed = 0, sumGreen = 0, sumBlue = 0;
 			int countIncluded = 0;
 			for(int x = -size; x <= size; x++) {
 			
@@ -64,32 +65,31 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn, in
 					// Now we can begin
 					int numberOfValuesInEachRow = imageIn->x; 
 					int offsetOfThePixel = (numberOfValuesInEachRow * currentY + currentX);
-					if(colourType == 0)
-						sum += imageIn->data[offsetOfThePixel].red;
-					if(colourType == 1)
-						sum += imageIn->data[offsetOfThePixel].green;
-					if(colourType == 2)
-						sum += imageIn->data[offsetOfThePixel].blue;
+					sumRed += imageIn->data[offsetOfThePixel].red;
+					sumGreen += imageIn->data[offsetOfThePixel].green;
+					sumBlue += imageIn->data[offsetOfThePixel].blue;
 					
-					// Keep track of how many values we have included
+					// Keep track of how many values we have included  (ON THAT ROW?)
 					countIncluded++;
 				}
 			
 			}
 			
 			// Now we compute the final value
-			double value = sum / countIncluded;
+			// setter verdien direkte, ikke noe mellomlargring.
+
+			// double valueRed = sumRed / countIncluded;
+			// double valueGreen = sumGreen / countIncluded;
+			// double valueBlue = sumBlue / countIncluded;
+			// printf("count included %i\n", countIncluded);
 			
 			
 			// Update the output image
 			int numberOfValuesInEachRow = imageOut->x; // R, G and B
 			int offsetOfThePixel = (numberOfValuesInEachRow * senterY + senterX);
-			if(colourType == 0)
-				imageOut->data[offsetOfThePixel].red = value;
-			if(colourType == 1)
-				imageOut->data[offsetOfThePixel].green = value;
-			if(colourType == 2)
-				imageOut->data[offsetOfThePixel].blue = value;
+			imageOut->data[offsetOfThePixel].red = sumRed / countIncluded;
+			imageOut->data[offsetOfThePixel].green = sumGreen / countIncluded;
+			imageOut->data[offsetOfThePixel].blue = sumBlue / countIncluded;
 		}
 	
 	}
@@ -107,7 +107,10 @@ PPMImage * performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage
 	imageOut->y = imageInSmall->y;
 	
 	for(int i = 0; i < imageInSmall->x * imageInSmall->y; i++) {
+
+		// kan sikkert ta noe med abs value her?  -> bare abs gir error pixler
 		double value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
+		printf("value is: %f\n", value);
 		if(value > 255)
 			imageOut->data[i].red = 255;
 		else if (value < -1.0) {
@@ -159,7 +162,7 @@ PPMImage * performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage
 
 
 int main(int argc, char** argv) {
-	
+	clock_t start = clock(), diff;
 	PPMImage *image;
 	
 	if(argc > 1) {
@@ -167,58 +170,62 @@ int main(int argc, char** argv) {
 	} else {
 		image = readStreamPPM(stdin);
 	}
-	AccurateImage *imageAccurate1_tiny = convertImageToNewFormat(image);
+	AccurateImage *imageAccurate1_tiny = convertImageToNewFormat(image); // hva er egentlig forskjellen på Accurate1 og 2?
 	AccurateImage *imageAccurate2_tiny = convertImageToNewFormat(image);
 	
+	int colour = 0; // don't make any difference what it is... just need it because it needs an parameter.
 	// Process the tiny case:
-	for(int colour = 0; colour < 3; colour++) {
+	//for(int colour = 0; colour < 3; colour++) {
+	
+	//why does it do everything 5 times?...??? TODO: experement with this... removing some of them gives a lot of pixel errors
+	// samples the points around 5 times for each picture?
 		int size = 2; 
 		performNewIdeaIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
 		performNewIdeaIteration(imageAccurate1_tiny, imageAccurate2_tiny, colour, size);
 		performNewIdeaIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
 		performNewIdeaIteration(imageAccurate1_tiny, imageAccurate2_tiny, colour, size);
 		performNewIdeaIteration(imageAccurate2_tiny, imageAccurate1_tiny, colour, size);
-	}
+	//}
 	
 	
 	AccurateImage *imageAccurate1_small = convertImageToNewFormat(image);
 	AccurateImage *imageAccurate2_small = convertImageToNewFormat(image);
 	
 	// Process the small case:
-	for(int colour = 0; colour < 3; colour++) {
-		int size = 3;
+	//for(int colour = 0; colour < 3; colour++) {
+		size = 3;
 		performNewIdeaIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
 		performNewIdeaIteration(imageAccurate1_small, imageAccurate2_small, colour, size);
 		performNewIdeaIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
 		performNewIdeaIteration(imageAccurate1_small, imageAccurate2_small, colour, size);
 		performNewIdeaIteration(imageAccurate2_small, imageAccurate1_small, colour, size);
-	}
+	//}
 	
 	AccurateImage *imageAccurate1_medium = convertImageToNewFormat(image);
 	AccurateImage *imageAccurate2_medium = convertImageToNewFormat(image);
 	
 	// Process the medium case:
-	for(int colour = 0; colour < 3; colour++) {
-		int size = 5;
+	//for(int colour = 0; colour < 3; colour++) {
+		size = 5;
 		performNewIdeaIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
 		performNewIdeaIteration(imageAccurate1_medium, imageAccurate2_medium, colour, size);
 		performNewIdeaIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
 		performNewIdeaIteration(imageAccurate1_medium, imageAccurate2_medium, colour, size);
 		performNewIdeaIteration(imageAccurate2_medium, imageAccurate1_medium, colour, size);
-	}
+	//}
 	
 	AccurateImage *imageAccurate1_large = convertImageToNewFormat(image);
 	AccurateImage *imageAccurate2_large = convertImageToNewFormat(image);
 	
 	// Do each color channel
-	for(int colour = 0; colour < 3; colour++) {
-		int size = 8;
+	//for(int colour = 0; colour < 3; colour++) {
+		size = 8;
 		performNewIdeaIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
 		performNewIdeaIteration(imageAccurate1_large, imageAccurate2_large, colour, size);
 		performNewIdeaIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
 		performNewIdeaIteration(imageAccurate1_large, imageAccurate2_large, colour, size);
 		performNewIdeaIteration(imageAccurate2_large, imageAccurate1_large, colour, size);
-	}
+	//}
 	
 	// Save the images.
 	PPMImage *final_tiny = performNewIdeaFinalization(imageAccurate2_tiny,  imageAccurate2_small);
@@ -234,6 +241,13 @@ int main(int argc, char** argv) {
 		writeStreamPPM(stdout, final_small);
 		writeStreamPPM(stdout, final_medium);
 	}
+	
+	// messure the time taken
+	diff = clock() - start;
+	int msec = diff * 1000 / CLOCKS_PER_SEC;
+	printf("Time taken %d seconds %d milliseconds \n", msec/1000, msec%1000);
+	// --- done measuring time
+	
 	return 0;
 }
 
