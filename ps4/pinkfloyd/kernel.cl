@@ -50,7 +50,7 @@ float blue( float deg ) {
 	return fmax( .0f , fmin( 1.f, fmin(asc,desc)));
 }
 
-/* On ITS015-XX, this function needs to be redeclared with the below modifier:
+/* On CMB, this function needs to be redeclared with the below modifier:
 struct vec3 __OVERLOADABLE__ cross()*/
 struct vec3 cross( struct vec3 a,struct vec3 b){
 	struct vec3 ret ;
@@ -61,8 +61,55 @@ struct vec3 cross( struct vec3 a,struct vec3 b){
 }
 
 
-/* On ITS015-XX, this function needs to be redeclared with the below modifier:
+/* On CMB, this function needs to be redeclared with the below modifier:
 float __OVERLOADABLE__ dot()*/
 float dot( struct vec3 a , struct vec3 b ){
 	return a.x*b.x+ a.y*b.y+ a.z*b.z;
+}
+
+int max(float a, float b) {
+	if (a > b) {
+		return a;
+	}
+	return b;
+}
+
+int min(float a, float b) {
+	if (a < b) {
+		return a;
+	}
+	return b;
+}
+
+int isInBounds(float xmin, float ymin, float xmax, float ymax, float x, float y) {
+	if ((x >= xmin && x <= xmax) && (y >= ymin && y <= ymax)) {
+		return 1;
+	}
+	return 0;
+}
+
+int isPixelInCircle(circ_x, circ_y, r, x, y) {
+	float dy = circ_y - y;
+	float dx = circ_x - x;
+	float d = sqrt(pow(dx, 2.0) + pow(dy, 2.0));
+	if (d <= r)
+		return 1;
+	return 0;
+}
+
+int isPixelOnLine(x1, y1, x2, y2, thickness, x, y) {
+	float deltaX = x2 - x1;
+	float deltaY = y2 - y1;
+	float ax = deltaY / deltaX;
+	float b = (x2 * y1 - x1 * y2) / deltaX;
+
+	float xmin = min(x1, x2);
+	float xmax = max(x1, x2);
+	float ymin = min(y1, y2);
+	float ymax = max(y1, y2);
+
+	if ((fabs(y - (ax * x + b)) < thickness * 0.5) && isInBounds(xmin, ymin, xmax, ymax, x, y)) {
+		return 1;
+	}
+	return 0;
 }

@@ -1,4 +1,8 @@
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#else
 #include <CL/opencl.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -106,6 +110,8 @@ int main(){
 	// Read size of canvas
 	sscanf( line, "%d,%d" , &width,&height);
 	read = getline( & line, &linelen, stdin);
+	unsigned char output[height * width * 4];
+
 
 	// Read amount of primitives
 	sscanf( line, "%d" , & numberOfInstructions);
@@ -120,11 +126,38 @@ int main(){
 	for ( int i =0 ; i < numberOfInstructions; i++){
 		ssize_t read = getline( &instructions[i] , &instructionLengths[i] , stdin);
 		/*Read in the line or circle here*/
+		if (instructions[i][0] == 'c') {
+			parseCircle(instructions[i], circleinfo, &circles);
+		}
+		else {
+			parseLine(instructions[i], lineinfo, &lines);
+		}
 	}
 
 	// Build OpenCL program (more is needed, before and after the below code)
 	char * source = readText("kernel.cl");
 	cl_context context; cl_int error_cl;
+	cl_mem memobj;
+	cl_device_id device_id;
+	cl_command_queue command_queue;
+	cl_kernel kernel;
+	cl_platform_id platform_id;
+	cl_uint ret_num_devices;
+	cl_uint ret_num_platforms;
+
+	/* Get Platform and Device Info */
+	error_cl = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
+	error_cl = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
+
+	/* Create OpenCL context */
+	context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &error_cl);
+
+	/* Create Command Queue */
+	command_queue = clCreateCommandQueue(context, device_id, 0, &error_cl);
+
+	/* Create Memory Buffer */
+	memobj = clCreateBuffer(context, CL_MEM_READ_WRITE, height * width * 4 * sizeof(unsigned char), NULL, &error_cl);
+
 	cl_program program = clCreateProgramWithSource(
 		context, 1,
 		(const char **) &source,
@@ -138,16 +171,34 @@ int main(){
 
 	// Remember that more is needed before OpenCL can create kernel
 
+	/* Build Kernel Program */
+	error_cl = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
+
+
 	// Create Kernel / transfer data to device
+	kernel = clCreateKernel(program, "hello", &error_cl);
+
+	/* Set OpenCL Kernel Parameters */
+	error_cl = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&memobj);
+	error_cl = clSetKernelArg(kernel, 0, sizeof(struct CircleInfo), (void *)&circleinfo);
+	error_cl = clSetKernelArg(kernel, 0, sizeof(int), (void *)&circles);
+	error_cl = clSetKernelArg(kernel, 0, sizeof(struct LineInfo), (void *)&lineinfo);
+	error_cl = clSetKernelArg(kernel, 0, sizeof(int), (void *)&lines);
 
 	// Execute Kernel / transfer result back from device
+	error_cl = clEnqueueTask(command_queue, kernel, 0, NULL,NULL);
+
+	/* Copy results from the memory buffer */
+	error_cl = clEnqueueReadBuffer(command_queue, memobj, CL_TRUE, 0,
+		height * width * 4 * sizeof(unsigned char),output, 0, NULL, NULL);
+
 
 	size_t memfile_length = 0;
 	unsigned char * memfile = NULL;
 	lodepng_encode24(
 		&memfile,
 		&memfile_length,
-		/* Here's where your finished image should be put as parameter*/,
+		output/* Here's where your finished image should be put as parameter*/,
 		width,
 		height);
 
