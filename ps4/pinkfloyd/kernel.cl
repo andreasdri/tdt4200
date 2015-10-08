@@ -113,3 +113,15 @@ int isPixelOnLine(x1, y1, x2, y2, thickness, x, y) {
 	}
 	return 0;
 }
+
+__kernel void pinkfloyd(__global unsigned char* image) {
+	int i = 0;
+	while (i < 300 * 300 * 3) {
+		image[i] = 255;
+		image[i+1] = 255;
+		image[i+2] = 255;
+		i = i + 3;
+	}
+}
+
+
