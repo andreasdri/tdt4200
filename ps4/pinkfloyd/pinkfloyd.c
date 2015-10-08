@@ -111,7 +111,7 @@ int main(){
 	sscanf( line, "%d,%d" , &width,&height);
 	read = getline( & line, &linelen, stdin);
 	//unsigned char output[width * height * 4];
-	unsigned char* png = (unsigned char*) calloc(width*height*3, sizeof(unsigned char));
+	unsigned char* png = (unsigned char*) malloc(width*height *3 * sizeof(unsigned char));
 
 
 	// Read amount of primitives
@@ -148,22 +148,18 @@ int main(){
 
 	/* Get Platform and Device Info */
 	error_cl = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
-	error_cl = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
 
+	error_cl = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, &ret_num_devices);
 	/* Create OpenCL context */
 	context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &error_cl);
-
 	/* Create Command Queue */
 	command_queue = clCreateCommandQueue(context, device_id, 0, &error_cl);
-
 	/* Create Memory Buffer */
-	memobj = clCreateBuffer(context, CL_MEM_READ_WRITE, height * width * 3 * sizeof(unsigned char), png, &error_cl);
-
+	memobj = clCreateBuffer(context, CL_MEM_READ_WRITE, height * width * 3 * sizeof(unsigned char), NULL, &error_cl);
 	cl_program program = clCreateProgramWithSource(
 		context, 1,
 		(const char **) &source,
 		NULL, &error_cl);
-
 	// Check if OpenCL function invocation failed/succeeded
 	if ( !context ) {
 		printf( "Error, failed to create program. \n");
@@ -175,12 +171,11 @@ int main(){
 	/* Build Kernel Program */
 	error_cl = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
 
-
 	// Create Kernel / transfer data to device
 	kernel = clCreateKernel(program, "pinkfloyd", &error_cl);
-
 	/* Set OpenCL Kernel Parameters */
 	error_cl = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&memobj);
+
 	//error_cl = clSetKernelArg(kernel, 0, sizeof(struct CircleInfo), (void *)&circleinfo);
 	//error_cl = clSetKernelArg(kernel, 0, sizeof(int), (void *)&circles);
 	//error_cl = clSetKernelArg(kernel, 0, sizeof(struct LineInfo), (void *)&lineinfo);
@@ -191,15 +186,14 @@ int main(){
 
 	/* Copy results from the memory buffer */
 	error_cl = clEnqueueReadBuffer(command_queue, memobj, CL_TRUE, 0,
-		height * width * 3 * sizeof(unsigned char),png, 0, NULL, NULL);
-
+		height * width * 3 * sizeof(unsigned char), png, 0, NULL, NULL);
 
 	size_t memfile_length = 0;
 	unsigned char * memfile = NULL;
 	lodepng_encode24(
 		&memfile,
 		&memfile_length,
-		png/* Here's where your finished image should be put as parameter*/,
+		png /* Here's where your finished image should be put as parameter*/,
 		width,
 		height);
 

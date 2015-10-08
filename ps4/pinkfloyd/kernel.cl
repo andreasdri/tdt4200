@@ -52,6 +52,7 @@ float blue( float deg ) {
 
 /* On CMB, this function needs to be redeclared with the below modifier:
 struct vec3 __OVERLOADABLE__ cross()*/
+/*
 struct vec3 cross( struct vec3 a,struct vec3 b){
 	struct vec3 ret ;
 	ret.x = a.y*b.z - a.z*b.y;
@@ -59,14 +60,17 @@ struct vec3 cross( struct vec3 a,struct vec3 b){
 	ret.z = a.x*b.y - a.y*b.x;
 	return ret;
 }
+*/
 
 
 /* On CMB, this function needs to be redeclared with the below modifier:
 float __OVERLOADABLE__ dot()*/
+/*
 float dot( struct vec3 a , struct vec3 b ){
 	return a.x*b.x+ a.y*b.y+ a.z*b.z;
 }
-
+*/
+/*
 int max(float a, float b) {
 	if (a > b) {
 		return a;
@@ -80,6 +84,7 @@ int min(float a, float b) {
 	}
 	return b;
 }
+*/
 
 int isInBounds(float xmin, float ymin, float xmax, float ymax, float x, float y) {
 	if ((x >= xmin && x <= xmax) && (y >= ymin && y <= ymax)) {
@@ -91,7 +96,8 @@ int isInBounds(float xmin, float ymin, float xmax, float ymax, float x, float y)
 int isPixelInCircle(circ_x, circ_y, r, x, y) {
 	float dy = circ_y - y;
 	float dx = circ_x - x;
-	float d = sqrt(pow(dx, 2.0) + pow(dy, 2.0));
+	float ex = 2.0;
+	float d = sqrt(pow(dx, ex) + pow(dy, ex));
 	if (d <= r)
 		return 1;
 	return 0;
@@ -117,11 +123,10 @@ int isPixelOnLine(x1, y1, x2, y2, thickness, x, y) {
 __kernel void pinkfloyd(__global unsigned char* image) {
 	int i = 0;
 	while (i < 300 * 300 * 3) {
-		image[i] = 255;
+		image[i] = 0;
 		image[i+1] = 255;
-		image[i+2] = 255;
+		image[i+2] = 0;
 		i = i + 3;
 	}
 }
-
 
