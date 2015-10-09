@@ -7,7 +7,7 @@ CFLAGS:=--std=c99 -O2
 image.png: program
 	./$< < input_tdsotm.txt > $@
 
-program: pinkfloyd.o lodepng.o
+program: pinkfloyd.o lodepng.o clutil.o
 	$(CC) $^ -o $@ $(libs)
 
 clean:

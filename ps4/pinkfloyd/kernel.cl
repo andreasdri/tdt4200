@@ -70,21 +70,6 @@ float dot( struct vec3 a , struct vec3 b ){
 	return a.x*b.x+ a.y*b.y+ a.z*b.z;
 }
 */
-/*
-int max(float a, float b) {
-	if (a > b) {
-		return a;
-	}
-	return b;
-}
-
-int min(float a, float b) {
-	if (a < b) {
-		return a;
-	}
-	return b;
-}
-*/
 
 int isInBounds(float xmin, float ymin, float xmax, float ymax, float x, float y) {
 	if ((x >= xmin && x <= xmax) && (y >= ymin && y <= ymax)) {
@@ -93,7 +78,7 @@ int isInBounds(float xmin, float ymin, float xmax, float ymax, float x, float y)
 	return 0;
 }
 
-int isPixelInCircle(circ_x, circ_y, r, x, y) {
+int isPixelInCircle(float circ_x, float circ_y, float r, float x, float y) {
 	float dy = circ_y - y;
 	float dx = circ_x - x;
 	float ex = 2.0;
@@ -103,7 +88,7 @@ int isPixelInCircle(circ_x, circ_y, r, x, y) {
 	return 0;
 }
 
-int isPixelOnLine(x1, y1, x2, y2, thickness, x, y) {
+int isPixelOnLine(float x1, float y1, float x2, float y2, float thickness, float x, float y) {
 	float deltaX = x2 - x1;
 	float deltaY = y2 - y1;
 	float ax = deltaY / deltaX;
@@ -114,19 +99,48 @@ int isPixelOnLine(x1, y1, x2, y2, thickness, x, y) {
 	float ymin = min(y1, y2);
 	float ymax = max(y1, y2);
 
-	if ((fabs(y - (ax * x + b)) < thickness * 0.5) && isInBounds(xmin, ymin, xmax, ymax, x, y)) {
+	if ((fabs(y - (ax * x + b)) < thickness * 0.6) && isInBounds(xmin, ymin, xmax, ymax, x, y)) {
 		return 1;
 	}
 	return 0;
 }
 
-__kernel void pinkfloyd(__global unsigned char* image) {
-	int i = 0;
-	while (i < 300 * 300 * 3) {
-		image[i] = 0;
-		image[i+1] = 255;
-		image[i+2] = 0;
-		i = i + 3;
+__kernel void pinkfloyd(__global struct CircleInfo* circles,
+						int numCircles,
+						__global struct LineInfo* lines,
+						int numLines,
+						__global unsigned char* image) {
+
+	int i = get_global_id(0) * 3;
+	int max_id = get_global_size(0);
+	int width = (int) sqrt((float) max_id);
+	int r = i; int g = i + 1; int b = i + 2;
+	int x = (i / 3) % width;
+    int y = (i / 3) / width;
+
+	for(int j = 0; j < numCircles; j++) {
+
+		if(isPixelInCircle(circles[j].x * width, circles[j].y * width,
+			circles[j].radius * width, x, y) == 1) {
+
+			float deg = circles[j].color.angle;
+			float val = circles[j].color.intensity;
+			image[r] += red(deg) * val;
+			image[g] += green(deg) * val;
+			image[b] += blue(deg) * val;
+		}
+	}
+	for(int k = 0; k < numLines; k++) {
+
+		if(isPixelOnLine(lines[k].x1 * width, lines[k].y1 * width, lines[k].x2 * width,
+			lines[k].y2 * width, lines[k].thickness * width, x, y) == 1) {
+
+			float deg = lines[k].color.angle;
+			float val = lines[k].color.intensity;
+			image[r] += red(deg) * val;
+			image[g] += green(deg) * val;
+			image[b] += blue(deg) * val;
+		}
 	}
 }
 
