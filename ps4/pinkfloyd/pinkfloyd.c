@@ -146,20 +146,19 @@ int main(){
 	cl_platform_id platform;
 
 
-	/* Get Platform and Device Info */
+	// Get Platform and Device Info
 	error = clGetPlatformIDs(1, &platform, NULL);
 
 	error = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
 
-	/* Create OpenCL context */
+	// Create OpenCL context
 	context = clCreateContext(NULL, 1, &device, NULL, NULL, &error);
-	/* Create Command Queue */
+	// Create Command Queue
 	queue = clCreateCommandQueue(context, device, 0, &error);
 
-	/* Create Memory Buffer */
+	// Create Memory Buffer
 	deviceImage = clCreateBuffer(context, CL_MEM_READ_WRITE, height * width * 3 *
 		sizeof(unsigned char), NULL, &error);
-
 	deviceLines = clCreateBuffer(context, CL_MEM_READ_WRITE,
 		sizeof(struct LineInfo) * lines, NULL, &error);
 	deviceCircles = clCreateBuffer(context, CL_MEM_READ_WRITE,
@@ -168,7 +167,6 @@ int main(){
 
 	error = clEnqueueWriteBuffer(queue, deviceCircles, CL_TRUE, 0,
 	 	sizeof(struct CircleInfo) * circles, circleinfo, 0, NULL, NULL);
-
 	error = clEnqueueWriteBuffer(queue, deviceLines, CL_TRUE, 0,
 	 	sizeof(struct LineInfo) * lines, lineinfo, 0, NULL, NULL);
 
@@ -178,19 +176,21 @@ int main(){
 		NULL, &error);
 	// Check if OpenCL function invocation failed/succeeded
 	if ( !context ) {
-		printf( "Error, failed to create program. \n");
+		//printf( "Error, failed to create program. \n");
 		return 1;
 	}
 
 	// Remember that more is needed before OpenCL can create kernel
 
-	/* Build Kernel Program */
+	// Build Kernel Program
 	error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 
 	// Create Kernel / transfer data to device
 	kernel = clCreateKernel(program, "pinkfloyd", &error);
 
-	/* Set OpenCL Kernel Parameters */
+	// Set OpenCL Kernel Parameters
+
+
 	error = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&deviceCircles);
 	error = clSetKernelArg(kernel, 1, sizeof(cl_int), &circles);
 	error = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&deviceLines);
@@ -198,12 +198,23 @@ int main(){
 	error = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&deviceImage);
 
 	// Execute Kernel / transfer result back from device
-	size_t global[] = {90000};
+	size_t global[] = { width * height };
 	error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global, NULL, 0, NULL, NULL);
 
-	/* Copy results from the memory buffer */
+	// Copy results from the memory buffer
 	error = clEnqueueReadBuffer(queue, deviceImage, CL_TRUE, 0,
 		height * width * 3 * sizeof(unsigned char), png, 0, NULL, NULL);
+
+	// Finalization
+	error = clFlush(queue);
+	error = clFinish(queue);
+	error = clReleaseKernel(kernel);
+	error = clReleaseProgram(program);
+	error = clReleaseMemObject(deviceImage);
+	error = clReleaseMemObject(deviceLines);
+	error = clReleaseMemObject(deviceCircles);
+	error = clReleaseCommandQueue(queue);
+	error = clReleaseContext(context);
 
 
 	//unsigned int error2 = lodepng_encode24_file( "image.png", png, width, height);

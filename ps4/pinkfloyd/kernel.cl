@@ -99,7 +99,7 @@ int isPixelOnLine(float x1, float y1, float x2, float y2, float thickness, float
 	float ymin = min(y1, y2);
 	float ymax = max(y1, y2);
 
-	if ((fabs(y - (ax * x + b)) < thickness * 0.6) && isInBounds(xmin, ymin, xmax, ymax, x, y)) {
+	if ((fabs(y - (ax * x + b)) < thickness * 1.0) && isInBounds(xmin, ymin, xmax, ymax, x, y)) {
 		return 1;
 	}
 	return 0;
@@ -117,6 +117,7 @@ __kernel void pinkfloyd(__global struct CircleInfo* circles,
 	int r = i; int g = i + 1; int b = i + 2;
 	int x = (i / 3) % width;
     int y = (i / 3) / width;
+	image[i] = 0; image[i+1] = 0; image[i+2] = 0;
 
 	for(int j = 0; j < numCircles; j++) {
 
