@@ -101,22 +101,32 @@ int main(int argc, char **argv) {
 	// printf("10,24,43 is a valid trapiez: %i \n", isValidTrapiez(10,24,43));
 	// printf("45,28,53 is a valid trapiez: %i \n", isValidTrapiez(45,28,53));
 
-	int a,b,c;
-	int sum = 0;
-	for(c=start[0]; c < stop[0]; ++c){
-		for(b=4; b < c; ++b){
-			for(a=3; a < b; ++a){
-				if (isValidTrapiez(a,b,c))
-				{
-					printf("[%i,%i,%i] is valid\n", a,b,c);
-					sum++;
+	int a,b,c, runNr;
+	for(runNr = 0; runNr < amountOfRuns; ++runNr){
+		printf("----------------------------------\n");
+		printf("----------------------------------\n");
+		printf("------ runNr - %i \n", runNr);
+		int sum = 0;
+		#pragma omp parallel for private(a,b,c)
+		for(c=start[runNr]; c < stop[runNr]; ++c){
+			for(b=4; b < c; ++b){
+				for(a=3; a < b; ++a){
+					if (isValidTrapiez(a,b,c))
+					{
+						printf("[%i,%i,%i]\n", a,b,c);
+						#pragma omp critical
+						{
+							sum++;
+						}
+					}
 				}
 			}
 		}
+		printf("%d\n", sum);
 	}
 
+
 	fclose(fp);
-	printf("%d\n", sum);
 
 	return 0;
 }
