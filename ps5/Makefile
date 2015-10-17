@@ -1,6 +1,13 @@
 .PHONY: clean all
 
-CC:=gcc-5
+OS:=$(shell uname -s)
+
+ifeq ($(OS),Darwin)
+	CC:=gcc-5
+else
+	CC:=gcc 
+endif
+
 libs:=-lm
 CFLAGS:=--std=c99 -O2 -Wall
 
