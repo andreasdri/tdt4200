@@ -6,3 +6,4 @@ serial
 *.zip
 *.o
 *.ppm
+__pycache__
