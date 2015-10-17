@@ -25,8 +25,8 @@ int gcd (int a, int b) {
 
 
 int isPythagoreanPrimitive(int a, int b, int c) {
-	if (gcd(a, c) == 1 && gcd(b, c) == 1) {
-		if(a*a + b*b == c*c) {
+	if(a*a + b*b == c*c) {
+		if (gcd(gcd(a, b), c) == 1) {
 			return 1;
 		}
 		return 0;
@@ -86,7 +86,6 @@ int main(int argc, char **argv) {
 			for (a = 3; a < b; a++) {
 				int c = (int) sqrt(a * a + b * b);
 				if (c >= current_start && c < current_stop && isPythagoreanPrimitive(a, b, c) == 1) {
-					//# pragma omp critical
 					sum++;
 				}
 			}
