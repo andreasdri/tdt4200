@@ -21,7 +21,7 @@ mpi_program: pythagoreanTriplets.c
 		mpicc -o $@ $^ $(CFLAGS) $(libs) -DHAVE_MPI
 
 combined_program: pythagoreanTriplets.c
-		mpicc -o $@ $^ $(CFLAGS) $(libs) -DHAVE_MPI -DHAVE_OPENMP
+		mpicc -o $@ $^ $(CFLAGS) $(libs) -fopenmp -DHAVE_MPI -DHAVE_OPENMP
 
 clean:
 		rm -f serial_program omp_program mpi_program combined_program
