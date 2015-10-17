@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 
 		int b;
 		# pragma omp parallel for num_threads(threads) \
-			reduction(+: sum)
+			reduction(+: sum) schedule(static, 1)
 		for (b = 4; b < current_stop; b++) {
 			int a;
 			for (a = 3; a < b; a++) {
