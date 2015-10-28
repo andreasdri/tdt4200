@@ -30,8 +30,9 @@ AccurateImage *convertImageToNewFormat(PPMImage *image) {
 		imageAccurate->data[i].red   = (float) image->data[i].red;
 		imageAccurate->data[i].green = (float) image->data[i].green;
 		imageAccurate->data[i].blue  = (float) image->data[i].blue;
-		//imageAccurate->data[i].trash = (float) 0; // prove aa fjerne denne senere
+		imageAccurate->data[i].trash = (float) 0; // prove aa fjerne denne senere
 	}
+	//printf("number of pixels: %i\n", image->x * image->y);
 	imageAccurate->x = image->x;
 	imageAccurate->y = image->y;
 	
@@ -64,7 +65,11 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 	v4f sum;
 	int numberOfValuesInEachRow = imageIn->x;
 
-	v4f *imageArray = (v4f*) imageIn->data;
+	//TODO:  kanskje heller se på __m128 for å representere 4 floats enn å lage v4f
+
+	v4f *imageArray = (v4f*) imageIn->data; // lager imageIn til en vector array.
+	printf("imageIn->data[0] rgb is (%f, %f, %f) and trash is %f\n",imageIn->data[0].red, imageIn->data[0].green, imageIn->data[0].blue, imageIn->data[0].trash);
+	printf("imageArray[0] 	rgb is  (%f, %f, %f) and trash is %f\n\n", imageArray[0][0], imageArray[0][1], imageArray[0][2], imageArray[0][3]);
 	//printf("%i\n", imageArray[0][1]);
 	//v4f *line_buffer;
 	//posix_memalign(&line_buffer, 32, imageIn->x*sizeof(v4f));
@@ -130,7 +135,7 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 		//sum_green =0;
 		//sum_red = 0;
 		//sum_blue = 0;
-		sum *= 0;
+		sum *= 0; // resets the vector.
 		for(int senterX = 0; senterX < imageIn->x; senterX++) {
 			// in this loop, we do exactly the same thing as before but only with the array line_buffer
 
@@ -242,6 +247,17 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 
 
 int main(int argc, char** argv) {
+
+/*
+	v4f a;
+	a[0] = 0;
+	a[1] = 1;
+	a[2] = 2;
+	a[3] = 3;
+	v4f b = {0,2,3,10};
+	b +=1;
+	printf("%f,%f,%f,%f\n", b[0], b[1], b[2], b[3]);
+*/
 
 	PPMImage *image;
         
