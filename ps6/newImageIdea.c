@@ -68,17 +68,21 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 	//TODO:  kanskje heller se på __m128 for å representere 4 floats enn å lage v4f
 
 	v4f *imageArray = (v4f*) imageIn->data; // lager imageIn til en vector array.
-	printf("imageIn->data[0] rgb is (%f, %f, %f) and trash is %f\n",imageIn->data[0].red, imageIn->data[0].green, imageIn->data[0].blue, imageIn->data[0].trash);
-	printf("imageArray[0] 	rgb is  (%f, %f, %f) and trash is %f\n\n", imageArray[0][0], imageArray[0][1], imageArray[0][2], imageArray[0][3]);
+		//printf("imageIn->data[0] rgb is (%f, %f, %f) and trash is %f\n",imageIn->data[0].red, imageIn->data[0].green, imageIn->data[0].blue, imageIn->data[0].trash);
+		//printf("imageArray[0] 	rgb is  (%f, %f, %f) and trash is %f\n\n", imageArray[0][0], imageArray[0][1], imageArray[0][2], imageArray[0][3]);
 	//printf("%i\n", imageArray[0][1]);
 	//v4f *line_buffer;
 	//posix_memalign(&line_buffer, 32, imageIn->x*sizeof(v4f));
-	
 	// line buffer that will save the sum of some pixel in the column
-	v4f *line_buffer = (AccuratePixelSIMD*) malloc(imageIn->x*sizeof(AccuratePixelSIMD));
+	//v4f *line_buffer = (AccuratePixelSIMD*) malloc(imageIn->x*sizeof(AccuratePixelSIMD));
 	//AccuratePixelSIMD *line_buffer = (AccuratePixelSIMD*) malloc(imageIn->x*sizeof(AccuratePixelSIMD));
-	memset(line_buffer,0,imageIn->x*sizeof(AccuratePixelSIMD));
-	
+	//memset(line_buffer,0,imageIn->x*sizeof(AccuratePixelSIMD));
+		//printf("%i\n",imageIn->x );
+	v4f line_buffer[2090]; // Provd meg frem til at det fortsatt gaar med 2090
+	for (int i = 0; i < 2090; ++i)
+	{
+		line_buffer[i]*=0;
+	}
 	//v4f *line_buffer; 
 	//posix_memalign(&line_buffer, 32, imageIn->x*sizeof(16)); // v4f er 16 tror jeg
 
@@ -116,7 +120,7 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 			// for the last lines, we just need to subtract the first added line
 			endy = imageIn->y-1;
 			for(int i=0; i<imageIn->x; i++){
-				line_buffer[i] -= imageArray[numberOfValuesInEachRow*(starty-1)+1];
+				line_buffer[i] -= imageArray[numberOfValuesInEachRow*(starty-1)+i];
 				//line_buffer[i].blue-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].blue;
 				//line_buffer[i].red-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].red;
 				//line_buffer[i].green-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].green;
@@ -181,11 +185,10 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 			//imageOut->data[offsetOfThePixel].green = sum_green/countIncluded;
 			//imageOut->data[offsetOfThePixel].blue = sum_blue/countIncluded;
 		}
-	
 	}
 
 	// free memory
-	free(line_buffer);	
+	//free(line_buffer);	
 }
 
 // Perform the final step, and save it as a ppm in imageOut
@@ -247,17 +250,6 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 
 
 int main(int argc, char** argv) {
-
-/*
-	v4f a;
-	a[0] = 0;
-	a[1] = 1;
-	a[2] = 2;
-	a[3] = 3;
-	v4f b = {0,2,3,10};
-	b +=1;
-	printf("%f,%f,%f,%f\n", b[0], b[1], b[2], b[3]);
-*/
 
 	PPMImage *image;
         
