@@ -24,6 +24,7 @@ AccurateImage *convertImageToNewFormat(PPMImage *image) {
 	AccurateImage *imageAccurate;
 	imageAccurate = (AccurateImage *)malloc(sizeof(AccurateImage));
 	imageAccurate->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
+# 	pragma omp parallel for
 	for(int i = 0; i < image->x * image->y; i++) {
 		imageAccurate->data[i].red   = (float) image->data[i].red;
 		imageAccurate->data[i].green = (float) image->data[i].green;
@@ -173,8 +174,69 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 	
 	imageOut->x = imageInSmall->x;
 	imageOut->y = imageInSmall->y;
-	
+#	pragma omp parallel for
 	for(int i = 0; i < imageInSmall->x * imageInSmall->y; i++) {
+
+	#	pragma omp parallel sections nowait
+		{
+			//  red
+			# pragma omp section
+			{
+				float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
+				if(value > 255.0f)
+					imageOut->data[i].red = 255;
+				else if (value < -1.0f) {
+					value = 257.0f+value;
+					if(value > 255.0f)
+						imageOut->data[i].red = 255;
+					else
+						imageOut->data[i].red = floorf(value);
+				} else if (value > -1.0f && value < 0.0f) {
+					imageOut->data[i].red = 0;
+				}  else {
+					imageOut->data[i].red = floorf(value);
+				}
+			}
+
+			// green
+			# pragma omp section
+			{
+				float value = (imageInLarge->data[i].green - imageInSmall->data[i].green);
+				if(value > 255.0f)
+					imageOut->data[i].green = 255;
+				else if (value < -1.0f) {
+					value = 257.0f+value;
+					if(value > 255.0f)
+						imageOut->data[i].green = 255;
+					else
+						imageOut->data[i].green = floorf(value);
+				} else if (value > -1.0f && value < 0.0f) {
+					imageOut->data[i].green = 0.0f;
+				} else {
+					imageOut->data[i].green = floorf(value);
+				}
+			}
+			// blue
+			# pragma omp section
+			{
+				float value = (imageInLarge->data[i].blue - imageInSmall->data[i].blue);
+				if(value > 255.0f)
+					imageOut->data[i].blue = 255;
+				else if (value < -1.0f) {
+					value = 257.0f+value;
+					if(value > 255.0f)
+						imageOut->data[i].blue = 255;
+					else
+						imageOut->data[i].blue = floorf(value);
+				} else if (value > -1.0f && value < 0.0f) {
+					imageOut->data[i].blue = 0;
+				} else {
+					imageOut->data[i].blue = floorf(value);
+				}
+			}
+		}
+
+		/* 
 		float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 
 		if(value > 255.0f)
@@ -220,6 +282,7 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 		} else {
 			imageOut->data[i].blue = floorf(value);
 		}
+		*/
 	}
 	
 }
@@ -236,7 +299,6 @@ int main(int argc, char** argv) {
 	}
 
 	AccurateImage *imageUnchanged = convertImageToNewFormat(image); // save the unchanged image from input image
-	AccurateImage *imageBuffer = createEmptyImage(image);
 	AccurateImage *imageSmall = createEmptyImage(image);
 	AccurateImage *imageBig = createEmptyImage(image);
 	
@@ -244,19 +306,36 @@ int main(int argc, char** argv) {
 	imageOut = (PPMImage *)malloc(sizeof(PPMImage));
 	imageOut->data = (PPMPixel*)malloc(image->x * image->y * sizeof(PPMPixel));
 
-	// Process the tiny case:
-	performNewIdeaIteration(imageSmall, imageUnchanged, 2);
-	performNewIdeaIteration(imageBuffer, imageSmall, 2);
-	performNewIdeaIteration(imageSmall, imageBuffer, 2);
-	performNewIdeaIteration(imageBuffer, imageSmall, 2);
-	performNewIdeaIteration(imageSmall, imageBuffer, 2);
+
+#	pragma omp parallel sections
+	{
+		# pragma omp section
+		{
+			// needs seperate buffers
+			AccurateImage *imageBuffer = createEmptyImage(image);
+			
+			// Process the tiny case:
+			performNewIdeaIteration(imageSmall, imageUnchanged, 2);
+			performNewIdeaIteration(imageBuffer, imageSmall, 2);
+			performNewIdeaIteration(imageSmall, imageBuffer, 2);
+			performNewIdeaIteration(imageBuffer, imageSmall, 2);
+			performNewIdeaIteration(imageSmall, imageBuffer, 2);
+		}
+		
+		# pragma omp section
+		{
+			// needs seperate buffers
+			AccurateImage *imageBuffer = createEmptyImage(image);
+			
+			// Process the small case:
+			performNewIdeaIteration(imageBig, imageUnchanged,3);
+			performNewIdeaIteration(imageBuffer, imageBig,3);
+			performNewIdeaIteration(imageBig, imageBuffer,3);
+			performNewIdeaIteration(imageBuffer, imageBig,3);
+			performNewIdeaIteration(imageBig, imageBuffer,3);
+		}
+	}
 	
-	// Process the small case:
-	performNewIdeaIteration(imageBig, imageUnchanged,3);
-	performNewIdeaIteration(imageBuffer, imageBig,3);
-	performNewIdeaIteration(imageBig, imageBuffer,3);
-	performNewIdeaIteration(imageBuffer, imageBig,3);
-	performNewIdeaIteration(imageBig, imageBuffer,3);
 	
 	// save tiny case result
 	performNewIdeaFinalization(imageSmall,  imageBig, imageOut);
@@ -266,7 +345,9 @@ int main(int argc, char** argv) {
 		writeStreamPPM(stdout, imageOut);
 	}
 
-	
+	// Image buffers for the rest (while testing more...)
+	AccurateImage *imageBuffer = createEmptyImage(image);
+			
 	// Process the medium case:
 	performNewIdeaIteration(imageSmall, imageUnchanged, 5);
 	performNewIdeaIteration(imageBuffer, imageSmall, 5);
