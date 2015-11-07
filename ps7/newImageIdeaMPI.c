@@ -231,20 +231,20 @@ int main(int argc, char** argv) {
 	int size;
 	MPI_Init(NULL, NULL);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	int array_of_blocklengths[3] = {1, 1, 1};
-    MPI_Datatype array_of_types[3] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
-    MPI_Datatype mpi_pixel_type;
-    MPI_Aint array_of_offsets[3];
+	MPI_Datatype array_of_types[3] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+	MPI_Datatype mpi_pixel_type;
+	MPI_Aint array_of_offsets[3];
 
-    array_of_offsets[0] = offsetof(AccuratePixel, red);
-    array_of_offsets[1] = offsetof(AccuratePixel, green);
-    array_of_offsets[2] = offsetof(AccuratePixel, blue);
+	array_of_offsets[0] = offsetof(AccuratePixel, red);
+	array_of_offsets[1] = offsetof(AccuratePixel, green);
+	array_of_offsets[2] = offsetof(AccuratePixel, blue);
 
-    MPI_Type_create_struct(3, array_of_blocklengths, array_of_offsets, array_of_types, &mpi_pixel_type);
-    MPI_Type_commit(&mpi_pixel_type);
+	MPI_Type_create_struct(3, array_of_blocklengths, array_of_offsets, array_of_types, &mpi_pixel_type);
+	MPI_Type_commit(&mpi_pixel_type);
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	MPI_Request reqIn, reqOut;
 
@@ -263,6 +263,11 @@ int main(int argc, char** argv) {
 	imageOut->data = (PPMPixel*)malloc(image->x * image->y * sizeof(PPMPixel));
 
 
+	// Rank 0 is the only process without a receive (that is posted ahead of send)
+	if (rank != 0) {
+		MPI_Irecv(imageReceive->data, image->x * image->y, mpi_pixel_type, rank-1, 0, MPI_COMM_WORLD, &reqIn);
+	}
+
 	if (rank == 0) {
 		// Process the tiny case:
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 2);
@@ -270,13 +275,12 @@ int main(int argc, char** argv) {
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 2);
 		performNewIdeaIteration(imageUnchanged, imageBuffer, 2);
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 2);
-		// Send to rank 1
+
+		// Send result to rank 1
 		MPI_Isend(imageBuffer->data, image->x * image->y, mpi_pixel_type, 1, 0, MPI_COMM_WORLD, &reqOut);
 	}
 
 	if (rank == 1) {
-		// Post receive ahead of send
-		MPI_Irecv(imageReceive->data, image->x * image->y, mpi_pixel_type, 0, 0, MPI_COMM_WORLD, &reqIn);
 		// Process the small case:
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 3);
 		performNewIdeaIteration(imageUnchanged, imageBuffer, 3);
@@ -284,7 +288,7 @@ int main(int argc, char** argv) {
 		performNewIdeaIteration(imageUnchanged, imageBuffer, 3);
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 3);
 
-		// Send to rank 2
+		// Send result to rank 2
 		MPI_Isend(imageBuffer->data, image->x * image->y, mpi_pixel_type, 2, 0, MPI_COMM_WORLD, &reqOut);
 
 		// save tiny case result
@@ -295,8 +299,6 @@ int main(int argc, char** argv) {
 	}
 
 	if (rank == 2) {
-		// Post receive ahead of send
-		MPI_Irecv(imageReceive->data, image->x * image->y, mpi_pixel_type, 1, 0, MPI_COMM_WORLD, &reqIn);
 		// Process the medium case:
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 5);
 		performNewIdeaIteration(imageUnchanged, imageBuffer, 5);
@@ -304,7 +306,7 @@ int main(int argc, char** argv) {
 		performNewIdeaIteration(imageUnchanged, imageBuffer, 5);
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 5);
 
-		// Send to rank 3
+		// Send result to rank 3
 		MPI_Isend(imageBuffer->data, image->x * image->y, mpi_pixel_type, 3, 0, MPI_COMM_WORLD, &reqOut);
 
 		// save small case
@@ -316,9 +318,6 @@ int main(int argc, char** argv) {
 
 
 	if (rank == 3) {
-		// Post receive ahead of send
-		MPI_Irecv(imageReceive->data, image->x * image->y, mpi_pixel_type, 2, 0, MPI_COMM_WORLD, &reqIn);
-
 		// process the large case
 		performNewIdeaIteration(imageBuffer, imageUnchanged, 8);
 		performNewIdeaIteration(imageUnchanged, imageBuffer, 8);
@@ -334,6 +333,11 @@ int main(int argc, char** argv) {
 
 	}
 
+	// Rank 3 is the only process without a send
+	if (rank != 3) {
+		MPI_Wait(&reqOut, MPI_STATUS_IGNORE);
+	}
+
 	// free all memory structures
 	freeImage(imageUnchanged);
 	freeImage(imageBuffer);
@@ -342,6 +346,7 @@ int main(int argc, char** argv) {
 	free(imageOut);
 	free(image->data);
 	free(image);
+
 	MPI_Finalize();
 
 	return 0;
