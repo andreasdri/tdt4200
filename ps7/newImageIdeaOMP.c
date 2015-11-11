@@ -65,12 +65,149 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 	int numberOfValuesInEachRow = imageIn->x;
 
 	// line buffer that will save the sum of some pixel in the column
+	// AccuratePixel *line_buffer = (AccuratePixel*) malloc(imageIn->x*sizeof(AccuratePixel));
+	// memset(line_buffer,0,imageIn->x*sizeof(AccuratePixel));
+
 	AccuratePixel *line_buffer = (AccuratePixel*) malloc(imageIn->x*sizeof(AccuratePixel));
 	memset(line_buffer,0,imageIn->x*sizeof(AccuratePixel));
 
+
 	// Iterate over each line of pixelx.
+	# pragma omp parallel num_threads(3)
+	{
+		// printf("Thread nr %i (%i)\n", omp_get_thread_num(),omp_get_num_threads());
+
+		AccuratePixel *line_buffer = (AccuratePixel*) malloc(imageIn->x*sizeof(AccuratePixel)); // all threads gets their own line_buffer
+		memset(line_buffer,0,imageIn->x*sizeof(AccuratePixel));
+
+		if (imageIn->y % omp_get_num_threads() != 0)
+		{
+			printf("ERROR, %i threads can't be equaly divided to %i \n", omp_get_num_threads(), imageIn->y);
+		}
+
+		int colums_each_thread = imageIn->y / omp_get_num_threads();
+		int thread_id = omp_get_thread_num();
+		// printf("thread %i will process from %i to %i\n", omp_get_thread_num(), thread_id*colums_each_thread, colums_each_thread*(thread_id+1));
+		int thread_from = thread_id*colums_each_thread;
+		int thread_to = colums_each_thread*(thread_id+1);
+
+		// if (thread_from - (size*2) > 0)
+		// {
+		// 	thread_from = thread_from - (size*2);
+		// }
+
+		//overlap is easiest, 
+		if (thread_to + (size) < imageIn->y)
+		{
+			thread_to = thread_to + (size);
+		}
+		
+		for(int senterY = thread_from; senterY < thread_to ; senterY++) {
+			// first and last line considered  by the computation of the pixel in the line senterY
+
+			int starty = senterY-size;
+			int endy = senterY+size;
+			//ting med x skal ikke endres
+			
+			int relative_min = thread_id*colums_each_thread ;
+			int relative_max = colums_each_thread*(thread_id+1);
+
+			// Initialize and update the line_buffer.
+			// For OpenMP this might cause problems
+			// Separating out the initialization part might help
+			if (starty <= relative_min){
+				starty = relative_min;
+				if(senterY == relative_min){
+					// for all pixel in the first line, we sum all pixel of the column (until the line endy)
+					// we save the result in the array line_buffer
+					for(int line_y=starty; line_y < endy; line_y++){
+						for(int i=0; i<imageIn->x; i++){
+							line_buffer[i].blue+=imageIn->data[numberOfValuesInEachRow*line_y+i].blue;
+							line_buffer[i].red+=imageIn->data[numberOfValuesInEachRow*line_y+i].red;
+							line_buffer[i].green+=imageIn->data[numberOfValuesInEachRow*line_y+i].green;
+						}
+					}
+				}
+				for(int i=0; i<imageIn->x; i++){
+					// add the next pixel of the next line in the column x
+					line_buffer[i].blue+=imageIn->data[numberOfValuesInEachRow*endy+i].blue;
+					line_buffer[i].red+=imageIn->data[numberOfValuesInEachRow*endy+i].red;
+					line_buffer[i].green+=imageIn->data[numberOfValuesInEachRow*endy+i].green;
+				}
+
+			}
+
+			else if (endy >= imageIn->y){
+				// for the last lines, we just need to subtract the first added line
+				endy = imageIn->y-1;
+				for(int i=0; i<imageIn->x; i++){
+					line_buffer[i].blue-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].blue;
+					line_buffer[i].red-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].red;
+					line_buffer[i].green-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].green;
+				}
+			}
+			else{
+				// general case
+				// add the next line and remove the first added line
+				for(int i=0; i<imageIn->x; i++){
+					line_buffer[i].blue+=imageIn->data[numberOfValuesInEachRow*endy+i].blue-imageIn->data[numberOfValuesInEachRow*(starty-1)+i].blue;
+					line_buffer[i].red+=imageIn->data[numberOfValuesInEachRow*endy+i].red-imageIn->data[numberOfValuesInEachRow*(starty-1)+i].red;
+					line_buffer[i].green+=imageIn->data[numberOfValuesInEachRow*endy+i].green-imageIn->data[numberOfValuesInEachRow*(starty-1)+i].green;
+				}	
+			}
+			// End of line_buffer initialisation.
+			
+
+			sum_green =0;
+			sum_red = 0;
+			sum_blue = 0;
+			for(int senterX = 0; senterX < imageIn->x; senterX++) {
+				// in this loop, we do exactly the same thing as before but only with the array line_buffer
+
+				int startx = senterX-size;
+				int endx = senterX+size;
+
+				if (startx <=0){
+					startx = 0;
+					if(senterX==0){
+						for (int x=startx; x < endx; x++){
+							sum_red += line_buffer[x].red;
+							sum_green += line_buffer[x].green;
+							sum_blue += line_buffer[x].blue;
+						}
+					}
+					sum_red +=line_buffer[endx].red;
+					sum_green +=line_buffer[endx].green;
+					sum_blue +=line_buffer[endx].blue;
+				}else if (endx >= imageIn->x){
+					endx = imageIn->x-1;
+					sum_red -=line_buffer[startx-1].red;
+					sum_green -=line_buffer[startx-1].green;
+					sum_blue -=line_buffer[startx-1].blue;
+
+				}else{
+					sum_red += (line_buffer[endx].red-line_buffer[startx-1].red);
+					sum_green += (line_buffer[endx].green-line_buffer[startx-1].green);
+					sum_blue += (line_buffer[endx].blue-line_buffer[startx-1].blue);
+				}			
+
+				// we save each pixel in the output image
+				offsetOfThePixel = (numberOfValuesInEachRow * senterY + senterX);
+				countIncluded=(endx-startx+1)*(endy-starty+1);
+
+				imageOut->data[offsetOfThePixel].red = sum_red/countIncluded;
+				imageOut->data[offsetOfThePixel].green = sum_green/countIncluded;
+				imageOut->data[offsetOfThePixel].blue = sum_blue/countIncluded;
+			}
+
+		}
+
+	}
+
+	/*
 	for(int senterY = 0; senterY < imageIn->y; senterY++) {
 		// first and last line considered  by the computation of the pixel in the line senterY
+
 		int starty = senterY-size;
 		int endy = senterY+size;
 		
@@ -106,7 +243,7 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 				line_buffer[i].blue-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].blue;
 				line_buffer[i].red-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].red;
 				line_buffer[i].green-=imageIn->data[numberOfValuesInEachRow*(starty-1)+i].green;
-			}	
+			}
 		}else{
 			// general case
 			// add the next line and remove the first added line
@@ -160,11 +297,12 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 			imageOut->data[offsetOfThePixel].green = sum_green/countIncluded;
 			imageOut->data[offsetOfThePixel].blue = sum_blue/countIncluded;
 		}
-	
+
 	}
+	*/
 
 	// free memory
-	free(line_buffer);	
+	//free(line_buffer);	
 }
 
 // Perform the final step, and save it as a ppm in imageOut
