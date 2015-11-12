@@ -31,7 +31,7 @@ AccurateImage *convertImageToNewFormat(PPMImage *image) {
 	}
 	imageAccurate->x = image->x;
 	imageAccurate->y = image->y;
-	
+
 	return imageAccurate;
 }
 
@@ -41,7 +41,7 @@ AccurateImage *createEmptyImage(PPMImage *image){
 	imageAccurate->data = (AccuratePixel*)malloc(image->x * image->y * sizeof(AccuratePixel));
 	imageAccurate->x = image->x;
 	imageAccurate->y = image->y;
-	
+
 	return imageAccurate;
 }
 
@@ -64,8 +64,6 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 	float sum_green = 0;
 	int numberOfValuesInEachRow = imageIn->x;
 	// line buffer that will save the sum of some pixel in the column
-	// AccuratePixel *line_buffer = (AccuratePixel*) malloc(imageIn->x*sizeof(AccuratePixel));
-	// memset(line_buffer,0,imageIn->x*sizeof(AccuratePixel));
 
 	AccuratePixel *line_buffer = (AccuratePixel*) malloc(imageIn->x*sizeof(AccuratePixel));
 	memset(line_buffer,0,imageIn->x*sizeof(AccuratePixel));
@@ -74,7 +72,6 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 	// Iterate over each line of pixelx.
 	# pragma omp parallel num_threads(OMP_NUM_THREADS)
 	{
-		// printf("Thread nr %i (%i)\n", omp_get_thread_num(),omp_get_num_threads());
 
 		AccuratePixel *line_buffer = (AccuratePixel*) malloc(imageIn->x*sizeof(AccuratePixel)); // all threads gets their own line_buffer
 		memset(line_buffer,0,imageIn->x*sizeof(AccuratePixel));
@@ -86,28 +83,22 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 
 		int colums_each_thread = imageIn->y / omp_get_num_threads();
 		int thread_id = omp_get_thread_num();
-		// printf("thread %i will process from %i to %i\n", omp_get_thread_num(), thread_id*colums_each_thread, colums_each_thread*(thread_id+1));
 		int thread_from = thread_id*colums_each_thread;
 		int thread_to = colums_each_thread*(thread_id+1);
 
-		// if (thread_from - (size*2) > 0)
-		// {
-		// 	thread_from = thread_from - (size*2);
-		// }
 
-		//overlap is easiest, 
+		//overlap is easiest,
 		if (thread_to + (size) < imageIn->y)
 		{
 			thread_to = thread_to + (size);
 		}
-		
+
 		for(int senterY = thread_from; senterY < thread_to ; senterY++) {
 			// first and last line considered  by the computation of the pixel in the line senterY
 
 			int starty = senterY-size;
 			int endy = senterY+size;
-			//ting med x skal ikke endres
-			
+
 			int relative_min = thread_id*colums_each_thread ;
 			int relative_max = colums_each_thread*(thread_id+1);
 
@@ -152,10 +143,10 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 					line_buffer[i].blue+=imageIn->data[numberOfValuesInEachRow*endy+i].blue-imageIn->data[numberOfValuesInEachRow*(starty-1)+i].blue;
 					line_buffer[i].red+=imageIn->data[numberOfValuesInEachRow*endy+i].red-imageIn->data[numberOfValuesInEachRow*(starty-1)+i].red;
 					line_buffer[i].green+=imageIn->data[numberOfValuesInEachRow*endy+i].green-imageIn->data[numberOfValuesInEachRow*(starty-1)+i].green;
-				}	
+				}
 			}
 			// End of line_buffer initialisation.
-			
+
 
 			sum_green =0;
 			sum_red = 0;
@@ -188,7 +179,7 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 					sum_red += (line_buffer[endx].red-line_buffer[startx-1].red);
 					sum_green += (line_buffer[endx].green-line_buffer[startx-1].green);
 					sum_blue += (line_buffer[endx].blue-line_buffer[startx-1].blue);
-				}			
+				}
 
 				// we save each pixel in the output image
 				offsetOfThePixel = (numberOfValuesInEachRow * senterY + senterX);
@@ -199,15 +190,15 @@ void performNewIdeaIteration(AccurateImage *imageOut, AccurateImage *imageIn,int
 				imageOut->data[offsetOfThePixel].blue = sum_blue/countIncluded;
 			}
 		}
-	}	
+	}
 }
 
 // Perform the final step, and save it as a ppm in imageOut
 void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imageInLarge, PPMImage *imageOut) {
-	
+
 	imageOut->x = imageInSmall->x;
 	imageOut->y = imageInSmall->y;
-	
+
 	for(int i = 0; i < imageInSmall->x * imageInSmall->y; i++) {
 		float value = (imageInLarge->data[i].red - imageInSmall->data[i].red);
 
@@ -224,7 +215,7 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 		}  else {
 			imageOut->data[i].red = floorf(value);
 		}
-		
+
 		value = (imageInLarge->data[i].green - imageInSmall->data[i].green);
 		if(value > 255.0f)
 			imageOut->data[i].green = 255;
@@ -239,7 +230,7 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 		} else {
 			imageOut->data[i].green = floorf(value);
 		}
-		
+
 		value = (imageInLarge->data[i].blue - imageInSmall->data[i].blue);
 		if(value > 255.0f)
 			imageOut->data[i].blue = 255;
@@ -255,14 +246,14 @@ void performNewIdeaFinalization(AccurateImage *imageInSmall, AccurateImage *imag
 			imageOut->data[i].blue = floorf(value);
 		}
 	}
-	
+
 }
 
 
 int main(int argc, char** argv) {
-	
+
 	PPMImage *image;
-        
+
 	if(argc > 1) {
 		image = readPPM("flower.ppm");
 	} else {
@@ -273,7 +264,7 @@ int main(int argc, char** argv) {
 	AccurateImage *imageBuffer = createEmptyImage(image);
 	AccurateImage *imageSmall = createEmptyImage(image);
 	AccurateImage *imageBig = createEmptyImage(image);
-	
+
 	PPMImage *imageOut;
 	imageOut = (PPMImage *)malloc(sizeof(PPMImage));
 	imageOut->data = (PPMPixel*)malloc(image->x * image->y * sizeof(PPMPixel));
@@ -284,14 +275,14 @@ int main(int argc, char** argv) {
 	performNewIdeaIteration(imageSmall, imageBuffer, 2);
 	performNewIdeaIteration(imageBuffer, imageSmall, 2);
 	performNewIdeaIteration(imageSmall, imageBuffer, 2);
-	
+
 	// Process the small case:
 	performNewIdeaIteration(imageBig, imageUnchanged,3);
 	performNewIdeaIteration(imageBuffer, imageBig,3);
 	performNewIdeaIteration(imageBig, imageBuffer,3);
 	performNewIdeaIteration(imageBuffer, imageBig,3);
 	performNewIdeaIteration(imageBig, imageBuffer,3);
-	
+
 	// save tiny case result
 	performNewIdeaFinalization(imageSmall,  imageBig, imageOut);
 	if(argc > 1) {
@@ -300,14 +291,14 @@ int main(int argc, char** argv) {
 		writeStreamPPM(stdout, imageOut);
 	}
 
-	
+
 	// Process the medium case:
 	performNewIdeaIteration(imageSmall, imageUnchanged, 5);
 	performNewIdeaIteration(imageBuffer, imageSmall, 5);
 	performNewIdeaIteration(imageSmall, imageBuffer, 5);
 	performNewIdeaIteration(imageBuffer, imageSmall, 5);
 	performNewIdeaIteration(imageSmall, imageBuffer, 5);
-	
+
 	// save small case
 	performNewIdeaFinalization(imageBig,  imageSmall,imageOut);
 	if(argc > 1) {
@@ -330,7 +321,7 @@ int main(int argc, char** argv) {
 	} else {
 		writeStreamPPM(stdout, imageOut);
 	}
-	
+
 	// free all memory structures
 	freeImage(imageUnchanged);
 	freeImage(imageBuffer);
@@ -340,7 +331,7 @@ int main(int argc, char** argv) {
 	free(imageOut);
 	free(image->data);
 	free(image);
-	
+
 	return 0;
 }
 
